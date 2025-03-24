@@ -64,7 +64,6 @@
     }
 
     .line-card {
-      background: white;
       padding: 15px;
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -74,6 +73,7 @@
     .line-card p {
       font-size: 16px;
       line-height: 1.5;
+      margin: 0;
     }
 
     .input-container {
@@ -143,6 +143,16 @@
     const storyID = localStorage.getItem("currentStoryID");
     const username = localStorage.getItem("username") || "Anonymous";
 
+    // Predefined color palette for lines (backgrounds)
+    const colors = [
+      '#e6f0ff', // Light blue
+      '#f0e6ff', // Light purple
+      '#e6ffe6', // Light green
+      '#fff0e6', // Light orange
+      '#ffe6e6', // Light red
+      '#f0ffe6'  // Light yellow-green
+    ];
+
     function loadStory() {
       if (!storyID) {
         window.location.href = "base.html";
@@ -157,9 +167,11 @@
         document.getElementById("storyTitle").textContent = storyData.title;
         const lineList = document.getElementById("lineList");
         lineList.innerHTML = "";
-        storyData.lines.forEach((line) => {
+        storyData.lines.forEach((line, index) => {
+          const color = colors[index % colors.length]; // Cycle through colors
           const div = document.createElement("div");
           div.className = "line-card";
+          div.style.backgroundColor = color;
           div.innerHTML = `<p>${line}</p>`;
           lineList.appendChild(div);
         });
