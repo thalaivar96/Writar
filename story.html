@@ -280,18 +280,14 @@
         return;
       }
 
-      if (!timerInterval) {
-        const timestamps = pending.map(([_, line]) => line.timestamp);
-        const earliestTime = Math.min(...timestamps);
-        updateTimer(earliestTime);
-      }
+      const hasVoted = pending.some(([_, line]) => line.votedBy && line.votedBy.includes(username));
 
       pending.forEach(([lineID, line]) => {
         const div = document.createElement("div");
         div.className = "pending-card";
         div.innerHTML = `
           <p>${line.text} (by ${line.author}) - Votes: ${line.votes}</p>
-          <button onclick="voteLine('${lineID}')" ${line.votedBy && line.votedBy.includes(username) ? 'disabled' : ''}>Vote</button>
+          <button onclick="voteLine('${lineID}')" ${hasVoted || (line.votedBy && line.votedBy.includes(username)) ? 'disabled' : ''}>Vote</button>
         `;
         pendingList.appendChild(div);
       });
@@ -324,7 +320,6 @@
       const newLine = document.getElementById("newLine").value.trim();
       if (!newLine) return;
 
-      // Check if user has already submitted a line in this cycle
       db.ref(`Stories/${storyID}/pendingLines`).once('value', (snapshot) => {
         const pendingData = snapshot.val();
         if (pendingData) {
@@ -336,7 +331,6 @@
           }
         }
 
-        // If no prior submission, add the line
         const pendingRef = db.ref(`Stories/${storyID}/pendingLines`).push();
         pendingRef.set({
           text: newLine,
@@ -346,6 +340,16 @@
           votedBy: []
         }).then(() => {
           document.getElementById("newLine").value = "";
+          
+          // Check if this is the second line to start the timer
+          db.ref(`Stories/${storyID}/pendingLines`).once('value', (updatedSnapshot) => {
+            const updatedPending = Object.entries(updatedSnapshot.val() || {});
+            if (updatedPending.length === 2 && !timerInterval) {
+              const timestamps = updatedPending.map(([_, line]) => line.timestamp);
+              const earliestTime = Math.min(...timestamps);
+              updateTimer(earliestTime);
+            }
+          });
         }).catch((error) => {
           alert("Error: " + error.message);
         });
@@ -353,16 +357,28 @@
     }
 
     function voteLine(lineID) {
-      const lineRef = db.ref(`Stories/${storyID}/pendingLines/${lineID}`);
-      lineRef.transaction((line) => {
-        if (line) {
-          if (!line.votedBy) line.votedBy = [];
-          if (!line.votedBy.includes(username)) {
-            line.votes += 1;
-            line.votedBy.push(username);
-          }
+      db.ref(`Stories/${storyID}/pendingLines`).once('value', (snapshot) => {
+        const pendingData = snapshot.val();
+        if (!pendingData) return;
+
+        const pending = Object.values(pendingData);
+        const hasVoted = pending.some(line => line.votedBy && line.votedBy.includes(username));
+        if (hasVoted) {
+          alert("You can only vote once per cycle.");
+          return;
         }
-        return line;
+
+        const lineRef = db.ref(`Stories/${storyID}/pendingLines/${lineID}`);
+        lineRef.transaction((line) => {
+          if (line) {
+            if (!line.votedBy) line.votedBy = [];
+            if (!line.votedBy.includes(username)) {
+              line.votes += 1;
+              line.votedBy.push(username);
+            }
+          }
+          return line;
+        });
       });
     }
 
