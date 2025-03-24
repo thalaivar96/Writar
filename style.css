@@ -55,6 +55,7 @@ header {
   transform: translateZ(0);
   backface-visibility: hidden;
   background: #333;
+  height: 60px;
   color: white;
   display: flex;
   justify-content: center;
