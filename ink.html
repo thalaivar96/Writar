@@ -2,24 +2,111 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Writar - Create Story</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-top: 70px;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: #007bff;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      width: 48%;
+      margin: 5px 1%;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: white;
+      padding: 10px;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+  </style>
 </head>
 <body>
-
   <header>
     <h1>Create New Story</h1>
   </header>
 
   <div class="container">
-    <input type="text" id="storyTitle" placeholder="Enter Story Title" /><br />
-    <input type="text" id="firstLine" placeholder="Enter First Line" /><br />
-    <button onclick="createStory()">Create Story</button>
-    <button onclick="window.location.href='base.html'">Back to Home</button>
+    <input type="text" id="storyTitle" placeholder="Enter Story Title" />
+    <input type="text" id="firstLine" placeholder="Enter First Line" />
+    <div class="button-group">
+      <button onclick="createStory()">Create Story</button>
+      <button onclick="window.location.href='base.html'">Back</button>
+    </div>
   </div>
 
   <footer>
@@ -40,7 +127,6 @@
 
     const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
     const username = localStorage.getItem("username") || "Anonymous";
 
     function createStory() {
@@ -65,6 +151,5 @@
       }
     }
   </script>
-
 </body>
 </html>
