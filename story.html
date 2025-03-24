@@ -280,7 +280,6 @@
         return;
       }
 
-      // Start timer only when 2+ lines are present and timer isn't running
       if (!timerInterval) {
         const timestamps = pending.map(([_, line]) => line.timestamp);
         const earliestTime = Math.min(...timestamps);
@@ -323,7 +322,21 @@
 
     function addLine() {
       const newLine = document.getElementById("newLine").value.trim();
-      if (newLine) {
+      if (!newLine) return;
+
+      // Check if user has already submitted a line in this cycle
+      db.ref(`Stories/${storyID}/pendingLines`).once('value', (snapshot) => {
+        const pendingData = snapshot.val();
+        if (pendingData) {
+          const pending = Object.values(pendingData);
+          const userHasSubmitted = pending.some(line => line.author === username);
+          if (userHasSubmitted) {
+            alert("You can only submit one line per voting cycle.");
+            return;
+          }
+        }
+
+        // If no prior submission, add the line
         const pendingRef = db.ref(`Stories/${storyID}/pendingLines`).push();
         pendingRef.set({
           text: newLine,
@@ -336,7 +349,7 @@
         }).catch((error) => {
           alert("Error: " + error.message);
         });
-      }
+      });
     }
 
     function voteLine(lineID) {
