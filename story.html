@@ -57,23 +57,49 @@
       background: #0056b3;
     }
 
-    .story-container {
+    .story-container, .pending-container {
       padding: 20px;
       max-width: 600px;
       margin: 0 auto;
     }
 
-    .line-card {
+    .line-card, .pending-card {
       padding: 15px;
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       margin-bottom: 15px;
     }
 
-    .line-card p {
+    .line-card p, .pending-card p {
       font-size: 16px;
       line-height: 1.5;
       margin: 0;
+    }
+
+    .pending-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pending-card button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .pending-card button:hover {
+      background: #0056b3;
+    }
+
+    .pending-card button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
     }
 
     .input-container {
@@ -111,6 +137,13 @@
     button:hover {
       background: #0056b3;
     }
+
+    #timer {
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -120,6 +153,11 @@
   </header>
 
   <div class="story-container" id="lineList"></div>
+
+  <div class="pending-container">
+    <div id="timer"></div>
+    <div id="pendingList"></div>
+  </div>
 
   <div class="input-container">
     <input type="text" id="newLine" placeholder="Add your line..." />
@@ -143,15 +181,9 @@
     const storyID = localStorage.getItem("currentStoryID");
     const username = localStorage.getItem("username") || "Anonymous";
 
-    // Predefined color palette for lines (backgrounds)
-    const colors = [
-      '#e6f0ff', // Light blue
-      '#f0e6ff', // Light purple
-      '#e6ffe6', // Light green
-      '#fff0e6', // Light orange
-      '#ffe6e6', // Light red
-      '#f0ffe6'  // Light yellow-green
-    ];
+    // Color palette for locked lines
+    const colors = ['#e6f0ff', '#f0e6ff', '#e6ffe6', '#fff0e6', '#ffe6e6', '#f0ffe6'];
+    const VOTING_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
     function loadStory() {
       if (!storyID) {
@@ -165,34 +197,127 @@
           return;
         }
         document.getElementById("storyTitle").textContent = storyData.title;
+
+        // Load locked lines
         const lineList = document.getElementById("lineList");
         lineList.innerHTML = "";
         storyData.lines.forEach((line, index) => {
-          const color = colors[index % colors.length]; // Cycle through colors
+          const color = colors[index % colors.length];
           const div = document.createElement("div");
           div.className = "line-card";
           div.style.backgroundColor = color;
           div.innerHTML = `<p>${line}</p>`;
           lineList.appendChild(div);
         });
+
+        // Load pending lines and timer
+        loadPendingLines(storyData);
       });
+    }
+
+    function loadPendingLines(storyData) {
+      const pendingList = document.getElementById("pendingList");
+      pendingList.innerHTML = "";
+      if (!storyData.pendingLines) {
+        document.getElementById("timer").textContent = "No submissions yet.";
+        return;
+      }
+
+      const pending = Object.entries(storyData.pendingLines);
+      if (pending.length === 0) {
+        document.getElementById("timer").textContent = "No submissions yet.";
+        return;
+      }
+
+      // Find earliest timestamp to set timer
+      const timestamps = pending.map(([_, line]) => line.timestamp);
+      const earliestTime = Math.min(...timestamps);
+      updateTimer(earliestTime);
+
+      pending.forEach(([lineID, line]) => {
+        const div = document.createElement("div");
+        div.className = "pending-card";
+        div.innerHTML = `
+          <p>${line.text} (by ${line.author}) - Votes: ${line.votes}</p>
+          <button onclick="voteLine('${lineID}')" ${line.votedBy && line.votedBy.includes(username) ? 'disabled' : ''}>Vote</button>
+        `;
+        pendingList.appendChild(div);
+      });
+    }
+
+    function updateTimer(startTime) {
+      const endTime = startTime + VOTING_DURATION;
+      const timer = document.getElementById("timer");
+
+      function tick() {
+        const now = Date.now();
+        const timeLeft = endTime - now;
+        if (timeLeft <= 0) {
+          timer.textContent = "Voting closed, selecting winner...";
+          selectWinner();
+          return;
+        }
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        timer.textContent = `Voting ends in ${hours}h ${minutes}m ${seconds}s`;
+      }
+
+      tick();
+      setInterval(tick, 1000);
     }
 
     function addLine() {
       const newLine = document.getElementById("newLine").value.trim();
       if (newLine) {
-        db.ref(`Stories/${storyID}`).once('value', (snapshot) => {
-          const storyData = snapshot.val();
-          const updatedLines = [...storyData.lines, newLine];
-          db.ref(`Stories/${storyID}`).update({ lines: updatedLines })
-            .then(() => {
-              document.getElementById("newLine").value = "";
-            })
-            .catch((error) => {
-              alert("Error: " + error.message);
-            });
+        const pendingRef = db.ref(`Stories/${storyID}/pendingLines`).push();
+        pendingRef.set({
+          text: newLine,
+          author: username,
+          votes: 0,
+          timestamp: Date.now(),
+          votedBy: []
+        }).then(() => {
+          document.getElementById("newLine").value = "";
+        }).catch((error) => {
+          alert("Error: " + error.message);
         });
       }
+    }
+
+    function voteLine(lineID) {
+      const lineRef = db.ref(`Stories/${storyID}/pendingLines/${lineID}`);
+      lineRef.transaction((line) => {
+        if (line) {
+          if (!line.votedBy) line.votedBy = [];
+          if (!line.votedBy.includes(username)) {
+            line.votes += 1;
+            line.votedBy.push(username);
+          }
+        }
+        return line;
+      });
+    }
+
+    function selectWinner() {
+      db.ref(`Stories/${storyID}`).once('value', (snapshot) => {
+        const storyData = snapshot.val();
+        if (!storyData.pendingLines) return;
+
+        const pending = Object.entries(storyData.pendingLines);
+        if (pending.length === 0) return;
+
+        // Find the line with the most votes
+        const winner = pending.reduce((max, curr) => curr[1].votes > max[1].votes ? curr : max);
+        const winningLine = winner[1].text;
+
+        // Add to main lines and clear pending
+        const updatedLines = [...storyData.lines, winningLine];
+        db.ref(`Stories/${storyID}`).update({
+          lines: updatedLines,
+          pendingLines: null // Reset for next cycle
+        });
+      });
     }
 
     window.onload = loadStory;
