@@ -112,7 +112,7 @@ button {
   margin: 4% 2%;
   border: none;
   border-radius: 5%;
-  background-color: black;
+  background-color: blue;
   color: white;
   cursor: pointer;
   font-weight: bold;
@@ -121,7 +121,7 @@ button {
 }
 
 button:hover {
-  background-color: #388e3c;
+  background-color: blue;
 }
 
 footer {
