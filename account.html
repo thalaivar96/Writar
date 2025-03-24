@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Writar Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Writar</h1>
+  </header>
+
+  <div class="container">
+    <h2>Login to Writar</h2>
+    <input type="text" id="username" placeholder="Username" /><br />
+    <input type="password" id="password" placeholder="Password" /><br />
+    <button onclick="login()">Login</button>
+    <button onclick="register()">Register</button>
+  </div>
+
+  <!-- Firebase + JS -->
+  <script type="module">
+    if (localStorage.getItem("username")) {
+      window.location.href = "base.html";
+    }
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDupIEsId9qew2VayiDnIMsG2Ou2kAz8zo",
+      authDomain: "storychain96.firebaseapp.com",
+      databaseURL: "https://storychain96-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "storychain96",
+      storageBucket: "storychain96.appspot.com",
+      messagingSenderId: "658725229361",
+      appId: "1:658725229361:web:1655d4c91a31471ec41610",
+      measurementId: "G-1HQ79XF13E"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.register = function() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      if (username && password) {
+        const dbRef = ref(db);
+        get(child(dbRef, `Users/${username}`)).then((snapshot) => {
+          if (snapshot.exists()) {
+            alert("Username already exists!");
+          } else {
+            set(ref(db, 'Users/' + username), { password: password })
+              .then(() => {
+                alert("Registered Successfully!");
+                localStorage.setItem("username", username);
+				localStorage.setItem("status", "in");
+                window.location.href = "base.html";
+              });
+          }
+        });
+      } else {
+        alert("Please fill all fields.");
+      }
+    };
+
+    window.login = function() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const dbRef = ref(db);
+      get(child(dbRef, `Users/${username}`)).then((snapshot) => {
+        if (snapshot.exists() && snapshot.val().password === password) {
+          alert("Login Successful!");
+          localStorage.setItem("username", username);
+		  localStorage.setItem("status", "in");
+          window.location.href = "base.html";
+        } else {
+          alert("Invalid credentials!");
+        }
+      });
+    };
+  </script>
+
+</body>
+</html>
