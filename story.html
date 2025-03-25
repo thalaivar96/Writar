@@ -167,6 +167,226 @@
   </style>
 </head>
 <body>
-  <!-- Header, story content, footer and full script provided by user -->
-</body>
+  <header>
+    <h1 id="storyTitle"></h1>
+    <button onclick="window.location.href='base.html'">Back</button>
+  </header>
+
+  <div class="story-container" id="lineList"></div>
+
+  <div class="pending-container">
+    <div id="timer"></div>
+    <div id="pendingList"></div>
+  </div>
+
+  <footer>
+    <div class="input-container">
+      <input type="text" id="newLine" placeholder="Add your line..." />
+      <button onclick="addLine()">Submit</button>
+    </div>
+  </footer>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDupIEsId9qew2VayiDnIMsG2Ou2kAz8zo",
+      authDomain: "storychain96.firebaseapp.com",
+      databaseURL: "https://storychain96-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "storychain96",
+      storageBucket: "storychain96.appspot.com",
+      messagingSenderId: "658725229361",
+      appId: "1:658725229361:web:1655d4c91a31471ec41610",
+      measurementId: "G-1HQ79XF13E"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const storyID = localStorage.getItem("currentStoryID");
+    const username = localStorage.getItem("username") || "Anonymous";
+
+    const colors = ['#e6f0ff', '#f0e6ff', '#e6ffe6', '#fff0e6', '#ffe6e6', '#f0ffe6'];
+    const VOTING_DURATION = 5 * 60 * 1000; // 5 minutes
+    let timerInterval = null;
+
+    function loadStory() {
+      if (!storyID) {
+        window.location.href = "base.html";
+        return;
+      }
+      db.ref(`Stories/${storyID}`).on('value', (snapshot) => {
+        const storyData = snapshot.val();
+        if (!storyData) {
+          window.location.href = "base.html";
+          return;
+        }
+        document.getElementById("storyTitle").textContent = storyData.title;
+
+        const lineList = document.getElementById("lineList");
+        lineList.innerHTML = "";
+        storyData.lines.forEach((line, index) => {
+          const color = colors[index % colors.length];
+          const div = document.createElement("div");
+          div.className = "line-card";
+          div.style.backgroundColor = color;
+          div.innerHTML = `<p>${line}</p>`;
+          lineList.appendChild(div);
+        });
+
+        loadPendingLines(storyData);
+
+        if (storyData.votingStartTime) {
+          updateTimer(storyData.votingStartTime);
+        }
+      });
+    }
+
+    function loadPendingLines(storyData) {
+      const pendingList = document.getElementById("pendingList");
+      pendingList.innerHTML = "";
+      const timer = document.getElementById("timer");
+
+      if (!storyData.pendingLines) {
+        timer.textContent = "Add at least 2 lines to start voting.";
+        clearInterval(timerInterval);
+        timerInterval = null;
+        return;
+      }
+
+      const pending = Object.entries(storyData.pendingLines);
+      if (pending.length < 2) {
+        timer.textContent = `Waiting for more submissions (${pending.length}/2).`;
+        clearInterval(timerInterval);
+        timerInterval = null;
+        return;
+      }
+
+      const hasVoted = pending.some(([_, line]) => line.votedBy && line.votedBy.includes(username));
+
+      pending.forEach(([lineID, line]) => {
+        const div = document.createElement("div");
+        div.className = "pending-card";
+        div.innerHTML = `
+          <p>${line.text} (by ${line.author}) - Votes: ${line.votes}</p>
+          <button onclick="voteLine('${lineID}')" ${hasVoted || (line.votedBy && line.votedBy.includes(username)) ? 'disabled' : ''}>Vote</button>
+        `;
+        pendingList.appendChild(div);
+      });
+    }
+
+    function updateTimer(startTime) {
+      const endTime = startTime + VOTING_DURATION;
+      const timer = document.getElementById("timer");
+
+      function tick() {
+        const now = Date.now();
+        const timeLeft = endTime - now;
+        if (timeLeft <= 0) {
+          timer.textContent = "Voting closed, selecting winner...";
+          clearInterval(timerInterval);
+          timerInterval = null;
+          selectWinner();
+          return;
+        }
+        const minutes = Math.floor(timeLeft / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        timer.textContent = `Voting ends in ${minutes}m ${seconds}s`;
+      }
+
+      tick();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function addLine() {
+      const newLine = document.getElementById("newLine").value.trim();
+      if (!newLine) return;
+
+      db.ref(`Stories/${storyID}/pendingLines`).once('value', (snapshot) => {
+        const pendingData = snapshot.val();
+        if (pendingData) {
+          const pending = Object.values(pendingData);
+          const userHasSubmitted = pending.some(line => line.author === username);
+          if (userHasSubmitted) {
+            alert("You can only submit one line per voting cycle.");
+            return;
+          }
+        }
+
+        const timestampNow = Date.now();
+        const pendingRef = db.ref(`Stories/${storyID}/pendingLines`).push();
+        pendingRef.set({
+          text: newLine,
+          author: username,
+          votes: 0,
+          timestamp: timestampNow,
+          votedBy: []
+        }).then(() => {
+          document.getElementById("newLine").value = "";
+
+          db.ref(`Stories/${storyID}/pendingLines`).once('value', (updatedSnapshot) => {
+            const updatedPending = Object.entries(updatedSnapshot.val() || {});
+            if (updatedPending.length === 2) {
+              db.ref(`Stories/${storyID}/votingStartTime`).once('value', (timeSnap) => {
+                if (!timeSnap.exists()) {
+                  db.ref(`Stories/${storyID}/votingStartTime`).set(timestampNow);
+                  updateTimer(timestampNow);
+                } else {
+                  updateTimer(timeSnap.val());
+                }
+              });
+            }
+          });
+        }).catch((error) => {
+          alert("Error: " + error.message);
+        });
+      });
+    }
+
+    function voteLine(lineID) {
+      db.ref(`Stories/${storyID}/pendingLines`).once('value', (snapshot) => {
+        const pendingData = snapshot.val();
+        if (!pendingData) return;
+
+        const pending = Object.values(pendingData);
+        const hasVoted = pending.some(line => line.votedBy && line.votedBy.includes(username));
+        if (hasVoted) {
+          alert("You can only vote once per cycle.");
+          return;
+        }
+
+        const lineRef = db.ref(`Stories/${storyID}/pendingLines/${lineID}`);
+        lineRef.transaction((line) => {
+          if (line) {
+            if (!line.votedBy) line.votedBy = [];
+            if (!line.votedBy.includes(username)) {
+              line.votes += 1;
+              line.votedBy.push(username);
+            }
+          }
+          return line;
+        });
+      });
+    }
+
+    function selectWinner() {
+      db.ref(`Stories/${storyID}`).once('value', (snapshot) => {
+        const storyData = snapshot.val();
+        if (!storyData.pendingLines) return;
+
+        const pending = Object.entries(storyData.pendingLines);
+        if (pending.length === 0) return;
+
+        const winner = pending.reduce((max, curr) => curr[1].votes > max[1].votes ? curr : max);
+        const winningLine = winner[1].text;
+
+        const updatedLines = [...storyData.lines, winningLine];
+        db.ref(`Stories/${storyID}`).update({
+          lines: updatedLines,
+          pendingLines: null,
+          votingStartTime: null
+        });
+      });
+    }
+
+    window.onload = loadStory;
+  </script>
+        </body>
 </html>
