@@ -8,162 +8,187 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <style>
-    /* Complete CSS provided by user */
     * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-    body {
-      background: #f5f5f5;
-      color: #333;
-      min-height: 100vh;
-      padding-top: 3.5rem;
-      padding-bottom: 4rem;
-    }
-    header {
-      position: fixed;
-      top: 0;
-      width: 100%;
-      background: white;
-      padding: 0.75rem 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.1);
-      z-index: 100;
-    }
-    header h1 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      max-width: 70%;
-      word-wrap: break-word;
-    }
-    header button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 0.4rem 0.8rem;
-      border-radius: 0.25rem;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.875rem;
-    }
-    header button:hover {
-      background: #0056b3;
-    }
-    .story-container, .pending-container {
-      padding: 1rem;
-      max-width: 100%;
-      margin: 0 auto;
-    }
-    .line-card, .pending-card {
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.1);
-      margin-bottom: 0.75rem;
-    }
-    .line-card p, .pending-card p {
-      font-size: 0.875rem;
-      line-height: 1.4;
-      margin: 0;
-    }
-    .pending-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .pending-card p {
-      flex: 1;
-      min-width: 0;
-    }
-    .pending-card button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 0.4rem 0.6rem;
-      border-radius: 0.25rem;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.75rem;
-    }
-    .pending-card button:hover {
-      background: #0056b3;
-    }
-    .pending-card button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    footer {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      background: white;
-      padding: 0.5rem 1rem;
-      box-shadow: 0 -0.1rem 0.2rem rgba(0, 0, 0, 0.1);
-      z-index: 100;
-    }
-    .input-container {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 0.25rem;
-      font-size: 0.875rem;
-      outline: none;
-    }
-    input[type="text"]:focus {
-      border-color: #007bff;
-    }
-    footer button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 0.25rem;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.875rem;
-    }
-    footer button:hover {
-      background: #0056b3;
-    }
-    #timer {
-      text-align: center;
-      font-size: 0.75rem;
-      color: #666;
-      margin-bottom: 1rem;
-    }
-    @media (max-width: 480px) {
-      header h1 {
-        font-size: 1rem;
-      }
-      header button {
-        font-size: 0.75rem;
-        padding: 0.3rem 0.6rem;
-      }
-      .line-card p, .pending-card p {
-        font-size: 0.75rem;
-      }
-      .pending-card button {
-        font-size: 0.625rem;
-        padding: 0.3rem 0.5rem;
-      }
-      input[type="text"] {
-        font-size: 0.75rem;
-      }
-      footer button {
-        font-size: 0.75rem;
-        padding: 0.4rem 0.8rem;
-      }
-    }
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background: #f5f5f5;
+  color: #333;
+  min-height: 100vh;
+  padding-top: 70px;
+  padding-bottom: 60px;
+}
+
+header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+
+header button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+header button:hover {
+  background: #0056b3;
+}
+
+.story-container, .pending-container {
+  padding: 20px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.line-card, .pending-card {
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 15px;
+}
+
+.line-card p, .pending-card p {
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.pending-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pending-card p {
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-card button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.pending-card button:hover {
+  background: #0056b3;
+}
+
+.pending-card button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  padding: 10px 20px;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.input-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+}
+
+input[type="text"]:focus {
+  border-color: #007bff;
+}
+
+footer button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+footer button:hover {
+  background: #0056b3;
+}
+
+#timer {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 480px) {
+  header h1 {
+    font-size: 20px;
+  }
+
+  header button {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .line-card p, .pending-card p {
+    font-size: 12px;
+  }
+
+  .pending-card button {
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+
+  input[type="text"] {
+    font-size: 12px;
+  }
+
+  footer button {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  }
   </style>
 </head>
 <body>
