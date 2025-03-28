@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-  <style>
+style>
     /* General Styles */
     * {
       margin: 0;
@@ -184,7 +184,7 @@
         padding: 8px 12px;
       }
     }
-  </style>
+</style>
 </head>
 <body>
   <header>
@@ -193,7 +193,6 @@
   </header>
 
   <div class="story-container" id="lineList"></div>
-
   <div class="pending-container">
     <div id="timer"></div>
     <div id="pendingList"></div>
@@ -207,9 +206,65 @@
   </footer>
 
   <script>
-    window.onload = () => {
-      document.getElementById("storyTitle").textContent = localStorage.getItem("currentStoryTitle") || "Story";
+    const firebaseConfig = {
+      apiKey: "AIzaSyDupIEsId9qew2VayiDnIMsG2Ou2kAz8zo",
+      authDomain: "storychain96.firebaseapp.com",
+      databaseURL: "https://storychain96-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "storychain96",
+      storageBucket: "storychain96.appspot.com",
+      messagingSenderId: "658725229361",
+      appId: "1:658725229361:web:1655d4c91a31471ec41610",
+      measurementId: "G-1HQ79XF13E"
     };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const storyID = localStorage.getItem("currentStoryID");
+    const username = localStorage.getItem("username") || "Anonymous";
+
+    function loadStory() {
+      if (!storyID) {
+        window.location.href = "base.html";
+        return;
+      }
+      db.ref(`Stories/${storyID}`).on('value', (snapshot) => {
+        const storyData = snapshot.val();
+        if (!storyData) {
+          window.location.href = "base.html";
+          return;
+        }
+        document.getElementById("storyTitle").textContent = storyData.title;
+
+        const lineList = document.getElementById("lineList");
+        lineList.innerHTML = "";
+        storyData.lines.forEach((line) => {
+          const div = document.createElement("div");
+          div.className = "line-card";
+          div.innerHTML = `<p>${line}</p>`;
+          lineList.appendChild(div);
+        });
+      });
+    }
+
+    function addLine() {
+      const newLine = document.getElementById("newLine").value.trim();
+      if (!newLine) return;
+
+      db.ref(`Stories/${storyID}/lines`).once('value', (snapshot) => {
+        const lines = snapshot.val() || [];
+        lines.push(newLine);
+
+        db.ref(`Stories/${storyID}`).update({
+          lines: lines
+        }).then(() => {
+          document.getElementById("newLine").value = "";
+        }).catch((error) => {
+          alert("Error: " + error.message);
+        });
+      });
+    }
+
+    window.onload = loadStory;
   </script>
 </body>
 </html>
